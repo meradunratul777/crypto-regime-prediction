@@ -1,0 +1,29 @@
+{
+  "selected_lookback": 30,
+  "comparisons": {
+    "persistence": {
+      "method": "paired moving-block bootstrap over UTC decision timestamps; assets kept together",
+      "repetitions": 2000,
+      "block_bars": 42,
+      "block_days": 7.0,
+      "seed": 1729,
+      "metrics": {
+        "macro_f1_delta": {
+          "lower_95": 0.02234758597685378,
+          "upper_95": 0.08449492940453915,
+          "bootstrap_fraction_positive": 1.0
+        },
+        "accuracy_delta": {
+          "lower_95": -0.003652968036529647,
+          "upper_95": 0.07603310502283102,
+          "bootstrap_fraction_positive": 0.966
+        },
+        "balanced_accuracy_delta": {
+          "lower_95": 0.027425071201398036,
+          "upper_95": 0.08962838467389929,
+          "bootstrap_fraction_positive": 1.0
+        }
+      }
+    }
+  }
+}

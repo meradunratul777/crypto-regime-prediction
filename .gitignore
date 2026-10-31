@@ -1,4 +1,14 @@
 .venv/
 __pycache__/
+.pytest_cache/
+.ruff_cache/
 *.py[cod]
+*.egg-info/
+.cache/
 artifacts/
+*.tar.gz
+*.part
+# Reconstructible market data; hashes and pinned sources are committed.
+data/*.csv
+data/*.parquet
+predictions.csv

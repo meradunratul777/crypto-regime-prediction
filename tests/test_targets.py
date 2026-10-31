@@ -1,40 +1,37 @@
 import numpy as np
 import pandas as pd
 
-from main import make_features, shift_targets, trailing_regime_states
+from regime_detection.targets import CLASSES, momentum_baseline, regime_targets
 
 
-def _ohlcv(close):
-    close = np.asarray(close, dtype=float)
-    idx = pd.date_range("2024-01-01", periods=len(close), freq="h", tz="UTC")
-    open_ = np.r_[close[0], close[:-1]]
-    return pd.DataFrame({"open": open_, "high": np.maximum(open_, close) * 1.001,
-                         "low": np.minimum(open_, close) * 0.999, "close": close,
-                         "volume": np.ones(len(close))}, index=idx)
+def bars(n=150):
+    index = pd.date_range("2022-01-01", periods=n, freq="4h", tz="UTC", name="timestamp")
+    close = 100 * np.exp(np.cumsum(np.random.default_rng(7).normal(0, 0.01, n)))
+    return pd.DataFrame({"open": close, "high": close * 1.002, "low": close * .998,
+                         "close": close, "volume": np.ones(n), "trade_count": np.ones(n),
+                         "taker_buy_volume": np.full(n, .5)}, index=index)
 
 
-def test_shift_targets_match_definition_and_truncate_future():
-    rng = np.random.default_rng(3)
-    close = 100 * np.exp(np.cumsum(rng.normal(0, 0.01, 500)))
-    data = _ohlcv(close)
-    state = trailing_regime_states(data, lookback=12, threshold=0.4)
-    labels = shift_targets(data, horizons=(4, 8), lookback=12, threshold=0.4)
-    for h in (4, 8):
-        col = f"shift_{h}h"
-        for i in range(20, 480):
-            expected = int(any(state.iloc[i + j] != state.iloc[i] for j in range(1, h + 1)))
-            assert labels[col].iloc[i] == expected
-        assert labels[col].iloc[-(h - 1):].isna().all()
+def test_forward_label_timing_and_past_only_reference():
+    frame = bars(80)
+    out = regime_targets(frame, horizon=6, vol_window=42)
+    t = 50
+    returns = np.diff(np.log(frame.close.iloc[t - 42:t + 1].to_numpy()))
+    sigma = np.sqrt(np.mean(returns**2))
+    future = np.diff(np.log(frame.close.iloc[t:t + 7].to_numpy()))
+    z = future.sum() / (sigma * np.sqrt(6))
+    ratio = np.sqrt(np.mean(future**2)) / sigma
+    expected = 0 if z <= -.5 else 1 if z >= .5 else 3 if ratio >= 1 else 2
+    assert out.target.iloc[t] == expected
+    assert out.decision_time.iloc[t] == frame.index[t] + pd.Timedelta(hours=4)
+    assert out.target_end_time.iloc[t] == frame.index[t] + pd.Timedelta(hours=28)
+    assert out.previous_regime.iloc[t] == out.target.iloc[t - 6]
+    assert set(out.target.dropna().astype(int).unique()).issubset(range(len(CLASSES)))
 
 
-def test_features_are_causal():
-    rng = np.random.default_rng(4)
-    close = 100 * np.exp(np.cumsum(rng.normal(0, 0.002, 300)))
-    first, changed = _ohlcv(close), _ohlcv(close.copy())
-    changed.iloc[250:, changed.columns.get_loc("close")] *= 2
-    # Mutate future OHLC fields consistently enough to prove earlier features don't move.
-    changed.iloc[250:, changed.columns.get_loc("high")] *= 2
-    changed.iloc[250:, changed.columns.get_loc("low")] *= 2
-    changed.iloc[250:, changed.columns.get_loc("open")] *= 2
-    a, b = make_features(first), make_features(changed)
-    pd.testing.assert_frame_equal(a.iloc[:250], b.iloc[:250])
+def test_missing_grid_bar_invalidates_windows_not_filled():
+    frame = bars(80).drop(bars(80).index[55])
+    out = regime_targets(frame)
+    assert np.isnan(out.target.reindex(pd.date_range(frame.index.min(), frame.index.max(), freq="4h", tz="UTC")).iloc[55])
+    rule = momentum_baseline(frame, out)
+    assert rule.isna().any()

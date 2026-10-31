@@ -1,0 +1,10 @@
+{
+  "BTCUSDT": {
+    "repository": "parshant231234-eng/BTCUSDT-Historical-Data",
+    "commit": "4180c3a2ff646c1a0e45f3ca3e41039b9238aa9c"
+  },
+  "ETHUSDT": {
+    "repository": "parshant231234-eng/ETHUSDT-Historical-Data",
+    "commit": "6665582643283d3a673bf71430081165373235c3"
+  }
+}
