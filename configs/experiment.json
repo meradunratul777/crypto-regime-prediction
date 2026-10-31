@@ -1,0 +1,20 @@
+{
+  "seed": 1729,
+  "symbols": ["BTCUSDT", "ETHUSDT"],
+  "data_start": "2017-12-01",
+  "data_end_exclusive": "2026-01-02",
+  "train_start": "2018-02-01",
+  "validation_start": "2023-01-01",
+  "test_start": "2025-01-01",
+  "test_end_exclusive": "2026-01-01",
+  "validation_fold_ends": ["2023-07-01", "2024-01-01", "2024-07-01", "2025-01-01"],
+  "lookbacks": [12, 30, 60, 120, 180],
+  "horizon": 6,
+  "label_vol_window": 42,
+  "direction_threshold": 0.5,
+  "range_vol_threshold": 1.0,
+  "selection_metric": "macro_f1",
+  "bootstrap_repetitions": 2000,
+  "bootstrap_block_bars": 42,
+  "models": ["lightgbm", "hist_gradient_boosting", "extra_trees", "logistic"]
+}
